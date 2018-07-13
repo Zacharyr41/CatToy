@@ -1,0 +1,242 @@
+// This #include statement was automatically added by the Particle IDE.
+#include <NewPing.h>
+
+// This #include statement was automatically added by the Particle IDE.
+#include "DHT.h"
+
+
+
+#define DHTPIN          D4
+#define DHTTYPE         DHT11
+
+#define DELAY           15
+
+#define TRIGGER_PIN_LEFT  A0  // Arduino pin tied to trigger pin on the ultrasonic sensor.
+#define TRIGGER_PIN_FRONT A1
+#define TRIGGER_PIN_RIGHT A2
+
+#define ECHO_PIN_LEFT D3
+#define ECHO_PIN_FRONT D5
+#define ECHO_PIN_RIGHT D6
+
+#define MAX_DISTANCE 200
+
+NewPing sonarLeft(TRIGGER_PIN_LEFT, ECHO_PIN_LEFT, MAX_DISTANCE); // Configuring the sensors
+NewPing sonarFront(TRIGGER_PIN_FRONT, ECHO_PIN_FRONT, MAX_DISTANCE);
+NewPing sonarRight(TRIGGER_PIN_RIGHT, ECHO_PIN_RIGHT, MAX_DISTANCE);
+
+bool morseCode;
+int globalPin;
+
+bool runServo;
+bool runServoTwo;
+
+int bottomServoPin = D0;
+int middleServoPin = D1;
+int topServoPin = D2;
+
+Servo bottomServo;
+Servo middleServo;
+Servo topServo; 
+
+
+DHT dht(DHTPIN, DHTTYPE);//Declaring the pin and the sensor
+int temperature = 0;
+int humidity = 0;
+
+int playCat(String args){
+    
+     
+    if (args == "true"){
+    runServo = true;
+    bottomServo.write(45);
+    
+    return 345;
+    
+    }
+    runServo = false;
+    return -123;
+    
+}
+
+int crazyServo(){
+    bottomServo.write(45);
+    middleServo.write(45);
+    topServo.write(45);
+    
+    delay(125);
+    bottomServo.write(90);
+    middleServo.write(45);
+    topServo.write(45);
+    delay(125);
+    
+    return 678;
+}
+
+ int flashLight(String args) {
+   int pos = args.indexOf(',');
+     if(-1 == pos){
+        return -1;
+    }
+    String strPin = args.substring(0, pos);
+    String strValue = args.substring(pos + 1);
+    
+    int pin = D2;
+    bool value = true;
+    
+    if(strPin.equalsIgnoreCase("D2")){
+        pin = D2;
+    }
+    else if(strPin.equalsIgnoreCase("D6")){
+        pin = D6;
+    }
+    else{
+        return -333;
+    }
+    
+    if(strValue.equalsIgnoreCase("true")){
+        value = true;
+    }
+    else if(strValue.equalsIgnoreCase("false")){
+        value = false;
+    }
+    else{
+        return -3;
+    }
+    
+    
+   
+  if (value){
+        
+        pinMode(pin, OUTPUT);
+        digitalWrite(pin, HIGH);
+        delay(125);
+        digitalWrite(pin, LOW);
+        delay(125);
+        morseCode = true;
+        globalPin = pin;
+  }
+    return 1;
+}
+// Returns temperature
+int getTemperature(String args){ 
+    return temperature;
+}
+
+// Returns humidity
+int getHumidity(String args){
+    return humidity;
+}
+
+// Turn on/off LEDs
+int controlled(String args){
+    int pos = args.indexOf(',');
+    
+    if(-1 == pos){
+        return -1;
+    }
+    
+    String strPin = args.substring(0, pos);
+    String strValue = args.substring(pos + 1);
+    
+    
+    int pin = D2;
+    int value = HIGH;
+    
+    if(strPin.equalsIgnoreCase("D2")){
+        pin = D2;
+    }
+    else if(strPin.equalsIgnoreCase("D6")){
+        pin = D6;
+    }
+    else{
+        return -2;
+    }
+    
+    if(strValue.equalsIgnoreCase("HIGH")){
+        value = HIGH;
+    }
+    else if(strValue.equalsIgnoreCase("LOW")){
+        value = LOW;
+    }
+    else{
+        return -3;
+    }
+    
+    digitalWrite(pin, value);
+    
+    
+    return 1;
+}
+
+
+void setup() {
+    Serial.begin(115200);
+    dht.begin();
+    
+    pinMode(D2, OUTPUT);
+    pinMode(D6, OUTPUT);
+    
+    
+    pinMode(bottomServoPin, OUTPUT);
+    pinMode(middleServoPin, OUTPUT);
+    pinMode(topServoPin, OUTPUT);
+    
+   bottomServo.attach(bottomServoPin);
+   middleServo.attach(middleServoPin);
+   topServo.attach(topServoPin);
+    
+    // Particle Functions
+    Spark.function("gettmp", getTemperature);
+    Spark.function("gethmd", getHumidity);
+    Spark.function("ctrlled", controlled);
+    Spark.function("blinkLight", flashLight);
+    Spark.function("playWithCat", playCat);
+ 
+    
+}
+
+void loop() {
+   // Serial.begin(115200);
+   int increment = 2;
+   int numberRandom = random(0, 180);
+   
+  //delay(50);                      // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
+  //unsigned int uOneS = sonarLeft.ping(); //Ping time in microseconds
+ // float distanceLeft = uOneS/US_ROUNDTRIP_CM; // convert to a distance in centimeters
+  delay(50);
+  unsigned int uTwoS = sonarFront.ping(); //Ping time in microseconds
+  float distanceFront = uTwoS/US_ROUNDTRIP_CM; // convert to a distance in centimeters
+  delay(50);
+  unsigned int uThreeS = sonarRight.ping(); //Ping time in microseconds
+  float distanceRight = uThreeS/US_ROUNDTRIP_CM; // convert to a distance in centimeters
+  
+ /* if (distanceOne < 5){
+     digitalWrite(D6, HIGH);
+}
+    else{
+        digitalWrite(D6, LOW);
+    }*/
+  
+   // scan from 0 to 180 degrees
+ 
+    if (runServo){
+        crazyServo();
+    }
+      
+    // Get temperature and humidity
+    temperature = (int)dht.readTemperature();
+    humidity = (int)dht.readHumidity();
+    
+    Serial.println();
+    //Serial.println("Distance Left is: ");
+   // Serial.print(distanceLeft);
+    Serial.println("Distance Front is: ");
+    Serial.print(distanceFront);
+    Serial.println("Distance Right is: ");
+    Serial.print(distanceRight);
+    
+    
+    
+    delay(DELAY);
+}
